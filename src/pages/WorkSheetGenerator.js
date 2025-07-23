@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../App.css';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 function WorksheetGenerator() {
   const [lessonContent, setLessonContent] = useState('');
@@ -7,10 +8,32 @@ function WorksheetGenerator() {
   const [worksheetType, setWorksheetType] = useState('');
   const [gradeLevel, setGradeLevel] = useState('');
   const [generatedWorksheet, setGeneratedWorksheet] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleGenerate = () => {
-    setGeneratedWorksheet('Your worksheet is being generated...');
-    // Later integrate API call here
+  const genAI = new GoogleGenerativeAI("AIzaSyChSs9_0X5QQsLe6vm8h3EGuO_vL-pGG24");
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const handleGenerate = async () => {
+    if (!lessonContent || !topic || !worksheetType || !gradeLevel) {
+      setGeneratedWorksheet("Please fill in all fields.");
+      return;
+    }
+
+    setLoading(true);
+    setGeneratedWorksheet('Generating your worksheet...');
+
+    const prompt = `Generate a ${worksheetType} worksheet for Grade ${gradeLevel} on the topic "${topic}". Use the following content: ${lessonContent}`;
+
+    try {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      setGeneratedWorksheet(response.text());
+    } catch (error) {
+      setGeneratedWorksheet('An error occurred while generating the worksheet.');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,8 +68,8 @@ function WorksheetGenerator() {
               <label>Worksheet Type</label>
               <select value={worksheetType} onChange={(e) => setWorksheetType(e.target.value)}>
                 <option value="">Select a type</option>
-                <option value="mcq">Multiple Choice</option>
-                <option value="fill">Fill in the Blanks</option>
+                <option value="Multiple Choice">Multiple Choice</option>
+                <option value="Fill in the Blanks">Fill in the Blanks</option>
               </select>
             </div>
 
@@ -56,13 +79,15 @@ function WorksheetGenerator() {
                 <option value="">Select a level</option>
                 <option value="1">Grade 1</option>
                 <option value="2">Grade 2</option>
-                <option value="2">Grade 3</option>
-                <option value="2">Grade 4</option>
+                <option value="3">Grade 3</option>
+                <option value="4">Grade 4</option>
               </select>
             </div>
           </div>
 
-          <button onClick={handleGenerate}>Generate Worksheet</button>
+          <button onClick={handleGenerate} disabled={loading}>
+            {loading ? 'Generating...' : 'Generate Worksheet'}
+          </button>
         </div>
 
         {/* Right: Result */}
