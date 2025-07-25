@@ -15,7 +15,7 @@ function SummaryTranslator() {
   const [translatedSummary, setTranslatedSummary] = useState("");
   const [loading, setLoading] = useState(false);
  
-  const genAI = new GoogleGenerativeAI("AIzaSyBXlWWEhU5SrfSBrUhMwLlu-9Shm8rUcCs");
+  const genAI = new GoogleGenerativeAI("AIzaSyB-4CjYbrKU6Oup90MW2LlAT62dYACVO2E");
   const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
  
   // File upload handler
