@@ -1,0 +1,136 @@
+.chat-float-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  font-size: 1.8rem;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  transition: background-color 0.3s ease;
+}
+
+.chat-float-btn:hover {
+  background-color: #45a049;
+}
+
+.chat-window {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 320px;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
+.chat-header {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.language-select {
+  margin: 12px;
+  padding: 10px;
+  width: 90%;
+  font-size: 14px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.chat-body {
+  padding: 10px;
+  height: 200px;
+  overflow-y: auto;
+  background: #f4f4f4;
+}
+
+.message {
+  margin: 6px 0;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  max-width: 80%;
+}
+
+.user {
+  background-color: #d1e7dd;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.bot {
+  background-color: #f8d7da;
+  align-self: flex-start;
+  margin-right: auto;
+}
+
+.chat-footer {
+  display: flex;
+  padding: 8px;
+  border-top: 1px solid #ccc;
+  background: white;
+}
+
+.chat-footer input {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-right: 8px;
+}
+
+.chat-footer button {
+  padding: 8px 10px;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.reset-btn {
+  border: none;
+  background: transparent;
+  color: #007BFF;
+  font-size: 13px;
+  margin: 5px 10px;
+  cursor: pointer;
+  text-align: left;
+}
