@@ -5,7 +5,7 @@ import VisualAidCreator from './pages/VisualAidCreator';
 import DocumentTranslator from './pages/DocumentTranslator';
 import LessonPlanner from './pages/LessonPlanner';
 import './App.css';
-
+ 
 function App() {
   return (
     <Router>
@@ -26,5 +26,5 @@ function App() {
     </Router>
   );
 }
-
+ 
 export default App;
