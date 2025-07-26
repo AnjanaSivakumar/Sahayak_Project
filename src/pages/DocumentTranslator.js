@@ -6,7 +6,7 @@ import mammoth from "mammoth"; // For DOCX parsing
 import { Buffer } from "buffer";
 import { collection, addDoc } from "firebase/firestore";
 import db from "../firebase"; 
- 
+import ReactMarkdown from 'react-markdown';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
  
 const LANGUAGES = ["Hindi", "Tamil", "Telugu", "Spanish", "French", "German", "Japanese", "Arabic"];
@@ -63,7 +63,7 @@ function SummaryTranslator() {
  
     setLoading(true);
     try {
-      const prompt = `Translate the following content into ${selectedLanguage}. Summarize the document in one short paragraph (less than 100 words)only in ${selectedLanguage} . Use just plain text with no markdowns or HTML tags.\n\n${documentText}`;
+      const prompt = `Translate the following content into ${selectedLanguage}. Summarize the document in one short paragraph (less than 100 words)only in ${selectedLanguage} . Use just plain text with no markdowns or HTML tags.\n\n${documentText}.If possible generate diagram,images to describe`;
       const result = await model.generateContent(prompt);
       const translated = await result.response.text();
       setTranslatedSummary(translated);
@@ -100,7 +100,7 @@ function SummaryTranslator() {
      
       {documentText && (
         <>
-          <h3>Extracted Text:</h3>
+          <ReactMarkdown>Extracted Text:</ReactMarkdown>
           <textarea style={styles.textArea} rows={6} value={documentText} readOnly />
         </>
       )}
