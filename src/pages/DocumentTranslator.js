@@ -4,6 +4,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as pdfjsLib from "pdfjs-dist";
 import mammoth from "mammoth"; // For DOCX parsing
 import { Buffer } from "buffer";
+import { collection, addDoc } from "firebase/firestore";
+import db from "../firebase"; 
  
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
  
@@ -14,7 +16,7 @@ function SummaryTranslator() {
   const [documentText, setDocumentText] = useState("");
   const [translatedSummary, setTranslatedSummary] = useState("");
   const [loading, setLoading] = useState(false);
-  const genAI = new GoogleGenerativeAI("AIzaSyChSs9_0X5QQsLe6vm8h3EGuO_vL-pGG24");
+  const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GENAI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "models/gemini-1.5-flash" });
  
   // File upload handler
@@ -56,27 +58,39 @@ function SummaryTranslator() {
  
   // Translation effect
   useEffect(() => {
-    const translate = async () => {
-      if (!documentText || !LANGUAGES.includes(selectedLanguage)) return;
+  const translate = async () => {
+    if (!documentText || !LANGUAGES.includes(selectedLanguage)) return;
  
-      setLoading(true);
-      try {
-        const prompt = `Translate the following content into ${selectedLanguage}.  Summarize the document
-        in one short paragraph (less than 100 words).
-        Use just plain text with no markdowns or HTML tags.
-        .\n\n${documentText}`;
-        const result = await model.generateContent(prompt);
-        const translated = await result.response.text();
-        setTranslatedSummary(translated);
-      } catch (err) {
-        console.error("Translation error:", err);
-        setTranslatedSummary("Translation failed.");
-      }
-      setLoading(false);
-    };
+    setLoading(true);
+    try {
+      const prompt = `Translate the following content into ${selectedLanguage}. Summarize the document in one short paragraph (less than 100 words)only in ${selectedLanguage} . Use just plain text with no markdowns or HTML tags.\n\n${documentText}`;
+      const result = await model.generateContent(prompt);
+      const translated = await result.response.text();
+      setTranslatedSummary(translated);
  
-    translate();
-  }, [selectedLanguage]);
+      // Normalize for Firestore
+      const normalizedLanguage = selectedLanguage.toLowerCase();
+ 
+      // Save to Firestore
+      await addDoc(collection(db, "Worksheets_DT"), {
+        documentText,
+        selectedLanguage,
+        translatedSummary: translated,
+        timestamp: new Date(),
+        selectedLanguage_lower: normalizedLanguage
+      });
+ 
+      console.log("Saved translated summary to Firestore");
+    } catch (err) {
+      console.error("Translation error:", err);
+      setTranslatedSummary("Translation failed.");
+    }
+    setLoading(false);
+  };
+ 
+  translate();
+}, [selectedLanguage]);
+
  
   return (
     <div style={styles.box}>

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import db from '../firebase'; // Make sure this is correctly configured
 import { marked } from 'marked';
 import '../App.css';
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
+ 
 const LessonPlanner = () => {
   const [topic, setTopic] = useState('');
   const [grade, setGrade] = useState('');
@@ -20,14 +22,17 @@ const LessonPlanner = () => {
   const [errors, setErrors] = useState({});
   const [generatedOutput, setGeneratedOutput] = useState('');
   const [activeTab, setActiveTab] = useState('input');
-
+ 
+  const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GENAI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+ 
   const handleCheckboxChange = (e) => {
     setOutputFormat({
       ...outputFormat,
       [e.target.name]: e.target.checked,
     });
   };
-
+ 
   const validateFields = () => {
     const newErrors = {};
     if (!topic.trim()) newErrors.topic = 'Topic is required';
@@ -36,37 +41,85 @@ const LessonPlanner = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
+ 
   const handleGeneratePlan = async () => {
     if (!validateFields()) return;
-
+ 
+    const normalizedTopic = topic.trim().toLowerCase();
+    const normalizedGrade = grade.trim().toLowerCase();
+    const normalizedSubject = subject.trim().toLowerCase();
+    const normalizedOtherSubject = otherSubject.trim().toLowerCase();
+    const normalizedObjectives = objectives.trim().toLowerCase();
+    const normalizedDuration = duration.trim().toLowerCase();
+    const selectedFormats = Object.keys(outputFormat).filter(key => outputFormat[key]);
+    const selectedFormatsString = selectedFormats.join(', ');
+    const selectedFormatsLower = selectedFormatsString.toLowerCase();
+    const prompt = `
+      Generate a detailed lesson plan on the topic '${topic}' for grade ${grade}.
+      Subject: ${subject === 'Other' ? otherSubject : subject}
+      Objectives: ${objectives}
+      Duration: ${duration}
+      Days: ${days}
+      Include: ${Object.keys(outputFormat).filter(key => outputFormat[key]).join(', ')}
+    `;
+ 
     try {
-      const genAI = new GoogleGenerativeAI("AIzaSyChSs9_0X5QQsLe6vm8h3EGuO_vL-pGG24");
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const prompt = `
-        Generate a detailed lesson plan on the topic '${topic}' for grade ${grade}.
-        Subject: ${subject === 'Other' ? otherSubject : subject}
-        Objectives: ${objectives}
-        Duration: ${duration}
-        Days: ${days}
-        Include: ${Object.keys(outputFormat).filter(key => outputFormat[key]).join(', ')}
-      `;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      setGeneratedOutput(response.text());
-      setActiveTab('genai');
+      const q = query(
+        collection(db, 'worksheets_lp'),
+        where('topic_lower', '==', normalizedTopic),
+        where('grade_lower', '==', normalizedGrade),
+        where('subject_lower', '==', normalizedSubject),
+        where('duration_lower', '==', normalizedDuration),
+        where('objectives_lower', '==', normalizedObjectives),
+        where('outputFormat_lower', '==', selectedFormatsLower)
+      );
+ 
+      const querySnapshot = await getDocs(q);
+ 
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0].data();
+        setGeneratedOutput(doc.generatedOutput);
+        setActiveTab('genai');
+        console.log('Loaded from Firestore');
+      } else {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const outputText = response.text();
+ 
+        setGeneratedOutput(outputText);
+        setActiveTab('genai');
+ 
+        await addDoc(collection(db, 'worksheets_lp'), {
+          topic,
+          grade,
+          subject,
+          objectives,
+          duration,
+          days,
+          otherSubject,
+          outputFormat,
+          generatedOutput: outputText,
+          timestamp: new Date(),
+          topic_lower: normalizedTopic,
+          grade_lower: normalizedGrade,
+          subject_lower: normalizedSubject,
+          otherSubject_lower: normalizedOtherSubject,
+          duration_lower: normalizedDuration,
+          objectives_lower: normalizedObjectives,
+          outputFormat_lower: selectedFormatsLower
+        });
+ 
+        console.log('Saved new lesson plan to Firestore');
+      }
     } catch (error) {
       setGeneratedOutput('An error occurred while generating the lesson plan.');
       console.error(error);
     }
   };
-
-  return (
+ return (
     <div style={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
       <p>Enter a topic and details to generate a custom lesson plan.</p>
-
+ 
       <label>Topic:</label>
       <input
         type="text"
@@ -76,7 +129,7 @@ const LessonPlanner = () => {
         style={{ width: '100%', marginBottom: '5px' }}
       />
       {errors.topic && <div style={{ color: 'red' }}>{errors.topic}</div>}
-
+ 
       <label>Grade Level:</label>
       <select value={grade} onChange={(e) => setGrade(e.target.value)} style={{ width: '100%', marginBottom: '5px' }}>
         <option value="">Select Grade</option>
@@ -85,7 +138,7 @@ const LessonPlanner = () => {
         ))}
       </select>
       {errors.grade && <div style={{ color: 'red' }}>{errors.grade}</div>}
-
+ 
       <label>Subject:</label>
       <select value={subject} onChange={(e) => setSubject(e.target.value)} style={{ width: '100%', marginBottom: '5px' }}>
         <option value="">Select Subject</option>
@@ -94,7 +147,7 @@ const LessonPlanner = () => {
         ))}
       </select>
       {errors.subject && <div style={{ color: 'red' }}>{errors.subject}</div>}
-
+ 
       {subject === 'Other' && (
         <>
           <label>Other Subject:</label>
@@ -107,7 +160,7 @@ const LessonPlanner = () => {
           />
         </>
       )}
-
+ 
       <label>Learning Objectives:</label>
       <textarea
         value={objectives}
@@ -115,7 +168,7 @@ const LessonPlanner = () => {
         placeholder="e.g., Understand the process of photosynthesis"
         style={{ width: '100%', marginBottom: '10px' }}
       />
-
+ 
       <label>Duration:</label>
       <select value={duration} onChange={(e) => setDuration(e.target.value)} style={{ width: '100%', marginBottom: '10px' }}>
         <option value="">Select Duration</option>
@@ -123,7 +176,7 @@ const LessonPlanner = () => {
           <option key={time} value={time}>{time}</option>
         ))}
       </select>
-
+ 
       <label>Days:</label>
       <input
         type="number"
@@ -132,7 +185,7 @@ const LessonPlanner = () => {
         placeholder="e.g., 5"
         style={{ width: '100%', marginBottom: '10px' }}
       />
-
+ 
 <label>Output Format:</label>
 <div className="output-format-grid">
   {['outline', 'activities', 'assessment', 'homework'].map((format) => (
@@ -147,12 +200,12 @@ const LessonPlanner = () => {
     </label>
   ))}
 </div>
-
-
+ 
+ 
       <button onClick={handleGeneratePlan} style={{ marginTop: '20px' }}>
         Generate Plan
       </button>
-
+ 
       {generatedOutput && (
         <div style={{ marginTop: '30px' }}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -163,7 +216,7 @@ const LessonPlanner = () => {
               GenAI Response
             </button>
           </div>
-
+ 
           {activeTab === 'input' && (
             <div style={{ padding: '15px', border: '1px solid #ccc', background: '#f9f9f9' }}>
                <pre>
@@ -179,7 +232,7 @@ Output Format: ${Object.keys(outputFormat).filter(key => outputFormat[key]).join
               </pre>
             </div>
           )}
-
+ 
          {activeTab === 'genai' && (
   <div className="genai-response-container">
     <div
@@ -188,11 +241,11 @@ Output Format: ${Object.keys(outputFormat).filter(key => outputFormat[key]).join
     />
   </div>
 )}
-
+ 
         </div>
       )}
     </div>
   );
 };
-
+ 
 export default LessonPlanner;
