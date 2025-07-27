@@ -16,7 +16,7 @@ function SchedulePlanner() {
     const initializeGapi = () => {
       window.gapi.load('client', async () => {
         await window.gapi.client.init({
-          apiKey: 'AIzaSyCRxB6F8x5b-PaZ0SBe4E92cy3k1Q7tCq4',
+          apiKey: 'my-api-key',
           discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest"],
         });
       });
