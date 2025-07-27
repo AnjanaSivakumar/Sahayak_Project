@@ -13,7 +13,7 @@ function App() {
     <Router>
       <div>
         <nav className="navbar">
-          <Link to="/">Chat</Link>
+          <Link to="/">chat</Link>
           <Link to="/worksheetGenerator">Worksheet Generator</Link>
           <Link to="/visual-aid">Visual Aid Creator</Link>
           <Link to="/translator">DocumentTranslator</Link>

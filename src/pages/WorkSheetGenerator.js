@@ -4,6 +4,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import db from '../firebase';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import ReactMarkdown from 'react-markdown'; // ✅ Markdown parser
+import { jsPDF } from 'jspdf'; // Import jsPDF
 
 function WorksheetGenerator() {
   const [lessonContent, setLessonContent] = useState('');
@@ -30,7 +31,7 @@ function WorksheetGenerator() {
     const normalizedWorksheetType = worksheetType.trim().toLowerCase();
     const normalizedGradeLevel = gradeLevel.trim().toLowerCase();
 
-    const prompt = `Generate a ${worksheetType} worksheet for Grade ${gradeLevel} on the topic "${topic}". Use the following content: ${lessonContent}.If possible generate diagram,images to describe`;
+    const prompt = `Generate a ${worksheetType} worksheet for Grade ${gradeLevel} on the topic "${topic}". Use the following content: ${lessonContent}. If possible generate diagram, images to describe`;
 
     try {
       const q = query(
@@ -75,6 +76,46 @@ function WorksheetGenerator() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica");
+    doc.setFontSize(16);
+
+    // Title of the worksheet
+    doc.text("Generated Worksheet", 20, 20);
+
+    // Adding topic and grade level
+    doc.setFontSize(12);
+    doc.text(`Topic: ${topic}`, 20, 30);
+    doc.text(`Grade Level: ${gradeLevel}`, 20, 40);
+
+    // Adding the content of the generated worksheet
+    doc.text("Worksheet Content:", 20, 50);
+
+    const margin = 20;
+    const pageHeight = doc.internal.pageSize.height;
+    const contentStartY = 60;
+    let currentY = contentStartY;
+
+    // Split the generated text into lines that fit within the page width
+    const lines = doc.splitTextToSize(generatedWorksheet, 180);
+
+    // Loop over the lines and add them to the document, ensuring they don't overflow the page
+    for (let i = 0; i < lines.length; i++) {
+      // If the current Y position exceeds the page height, create a new page
+      if (currentY + 10 > pageHeight - margin) {
+        doc.addPage();
+        currentY = margin;
+      }
+      doc.text(lines[i], margin, currentY);
+      currentY += 10; // Increment to the next line
+    }
+
+    // Save the generated PDF
+    doc.save(`${topic}_worksheet.pdf`);
   };
 
   return (
@@ -122,9 +163,9 @@ function WorksheetGenerator() {
                 <option value="2">Grade 2</option>
                 <option value="3">Grade 3</option>
                 <option value="4">Grade 4</option>
-                <option value="4">Grade 5</option>
-                <option value="4">Grade 6</option>
-                <option value="4">Grade 7</option>
+                <option value="5">Grade 5</option>
+                <option value="6">Grade 6</option>
+                <option value="7">Grade 7</option>
               </select>
             </div>
           </div>
@@ -145,6 +186,13 @@ function WorksheetGenerator() {
               'Your worksheet is waiting to be created.'
             )}
           </div>
+
+          {/* Export to PDF button */}
+          {generatedWorksheet && (
+            <button onClick={handleExportPDF} className="pdf-btn">
+              Export to PDF
+            </button>
+          )}
         </div>
       </div>
     </div>
